@@ -850,6 +850,11 @@ inline void fast_line_to_current(const AxisEnum fr_axis) { _line_to_current(fr_a
               thermalManager.fan_speed[0] = singlenozzle_fan_speed[new_tool];
             #endif
 
+            singlenozzle_temp[new_tool] = singlenozzle_temp[old_tool];
+            thermalManager.setTargetHotend(singlenozzle_temp[new_tool], 0);
+            thermalManager.set_heating_message(new_tool);
+            (void)thermalManager.wait_for_hotend(new_tool, false);
+            
             /*
             singlenozzle_temp[old_tool] = thermalManager.temp_hotend[0].target;
             if (singlenozzle_temp[new_tool] != singlenozzle_temp[old_tool]) {

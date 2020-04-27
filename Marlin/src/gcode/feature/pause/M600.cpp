@@ -164,6 +164,10 @@ void GcodeSuite::M600() {
       mmu2_M600();
       resume_print(slow_load_length, fast_load_length, 0, beep_count DXC_PASS);
     #else
+
+    tool_change(target_extruder, false);
+    resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
+      /*
       if(!SECOND_PAUSE)
       {
         rp_tool_change(target_extruder,false);
@@ -176,6 +180,7 @@ void GcodeSuite::M600() {
         resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
         SECOND_PAUSE = false; 
       }
+      */
     #endif
   }
 }
