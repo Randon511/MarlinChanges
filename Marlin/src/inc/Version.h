@@ -25,7 +25,7 @@
  * Release version. Leave the Marlin version or apply a custom scheme.
  */
 #ifndef SHORT_BUILD_VERSION
-  #define SHORT_BUILD_VERSION "0.0.0"
+  #define SHORT_BUILD_VERSION ""
 #endif
 
 /**
@@ -97,7 +97,7 @@
    * documentation about a specific Marlin release. Displayed in the Info Menu.
    */
 #ifndef WEBSITE_URL
-  #define WEBSITE_URL "http://3DXTRUDE.COM"
+  #define WEBSITE_URL "http://3DXRUDE.com"
 #endif
 
 /**

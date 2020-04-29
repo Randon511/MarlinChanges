@@ -2862,8 +2862,7 @@ void Temperature::tick() {
   #endif // AUTO_REPORT_TEMPERATURES
 
   #if HOTENDS && HAS_DISPLAY
-    void Temperature::set_heating_message(const uint8_t e) 
-    {
+    void Temperature::set_heating_message(const uint8_t e) {
       const bool heating = isHeatingHotend(e);
       ui.status_printf_P(0,
         #if HOTENDS > 1

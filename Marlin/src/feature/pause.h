@@ -34,9 +34,11 @@ typedef struct {
 
 #if ENABLED(ADVANCED_PAUSE_FEATURE)
 
-#include "../libs/nozzle.h"
+#if ENABLED(RANDOLPH_PAUSE)
+extern bool SECOND_PAUSE; 
+#endif 
 
-extern bool SECOND_PAUSE;
+#include "../libs/nozzle.h"
 
 enum PauseMode : char {
   PAUSE_MODE_SAME,

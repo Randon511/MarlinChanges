@@ -29,6 +29,7 @@
 #include "../../../module/motion.h"
 #include "../../../module/printcounter.h"
 
+
 #if EXTRUDERS > 1
   #include "../../../module/tool_change.h"
 #endif
@@ -45,11 +46,10 @@
   #include "../../../feature/mixing.h"
 #endif
 
-bool SECOND_PAUSE = false; 
 /**
  * M600: Pause for filament change
  *
- *  E[distance] aRetract the filament this far
+ *  E[distance] - Retract the filament this far
  *  Z[distance] - Move the Z axis by this distance
  *  X[position] - Move to this X position, with Y
  *  Y[position] - Move to this Y position, with X
@@ -160,29 +160,62 @@ void GcodeSuite::M600() {
 
   if (pause_print(retract, park_point, unload_length, true DXC_PASS)) 
   {
-    #if ENABLED(MMU2_MENUS)
+    #if ENABLED(RANDOLPH_PAUSE)
+      extern bool SECOND_PAUSE; 
+      #if ENABLED(MMU2_MENUS)
       mmu2_M600();
       resume_print(slow_load_length, fast_load_length, 0, beep_count DXC_PASS);
-    #else
+      #else
+        if (active_extruder == 0 && SECOND_PAUSE == false)
+        {
+          active_extruder = 1;
+          SECOND_PAUSE = true; 
+          resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
+        }
+        else if(active_extruder == 0 && SECOND_PAUSE == true)
+        {
+          wait_for_confirmation(true, beep_count DXC_PASS);
+          active_extruder = 1;
+          SECOND_PAUSE = false;
+          resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
+        }
+        else if (active_extruder == 1 && SECOND_PAUSE == false)
+        {
+          active_extruder = 0;
+          SECOND_PAUSE = true; 
+          resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
+        }
+        else if(active_extruder == 1 && SECOND_PAUSE == true)
+        {
+          wait_for_confirmation(true, beep_count DXC_PASS);
+          active_extruder = 0;
+          SECOND_PAUSE = false;
+          resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
+        }
 
-    tool_change(target_extruder, false);
-    resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
-      /*
-      if(!SECOND_PAUSE)
-      {
-        rp_tool_change(target_extruder,false);
-        resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
-        SECOND_PAUSE = true; 
-      }
-      else
-      {
+      #endif
+
+    #else
+      #if ENABLED(MMU2_MENUS)
+        mmu2_M600();
+        resume_print(slow_load_length, fast_load_length, 0, beep_count DXC_PASS);
+      #else
         wait_for_confirmation(true, beep_count DXC_PASS);
+        tool_change(target_extruder, false);
         resume_print(slow_load_length, fast_load_length, ADVANCED_PAUSE_PURGE_LENGTH, beep_count DXC_PASS);
-        SECOND_PAUSE = false; 
-      }
-      */
+      #endif
+
+      #if EXTRUDERS > 1
+      // Restore toolhead if it was changed
+      if (active_extruder_before_filament_change != active_extruder)
+        tool_change(active_extruder_before_filament_change, false); 
+      #endif
     #endif
   }
+
+  #if ENABLED(MIXING_EXTRUDER)
+    mixer.T(old_mixing_tool); // Restore original mixing tool
+  #endif
 }
 
 #endif // ADVANCED_PAUSE_FEATURE

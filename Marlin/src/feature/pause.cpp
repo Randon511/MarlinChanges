@@ -62,7 +62,7 @@
 
 #include "../libs/nozzle.h"
 #include "pause.h"
-
+extern bool SECOND_PAUSE = false; 
 // private:
 
 static xyze_pos_t resume_position;
@@ -238,74 +238,74 @@ bool load_filament(const float &slow_load_length/*=0*/, const float &fast_load_l
     extruder_duplication_enabled = saved_ext_dup_mode;
     stepper.set_directions();
   #endif
+  #if !ENABLED(RANDOLPH_PAUSE)
+    #if ENABLED(ADVANCED_PAUSE_CONTINUOUS_PURGE)
 
-  #if ENABLED(ADVANCED_PAUSE_CONTINUOUS_PURGE)
+      #if HAS_LCD_MENU
+        if (show_lcd) lcd_pause_show_message(PAUSE_MESSAGE_PURGE);
+      #endif
 
-    #if HAS_LCD_MENU
-      if (show_lcd) lcd_pause_show_message(PAUSE_MESSAGE_PURGE);
-    #endif
+      wait_for_user = true;
+      #if ENABLED(HOST_PROMPT_SUPPORT)
+        host_prompt_do(PROMPT_USER_CONTINUE, PSTR("Filament Purge Running..."), CONTINUE_STR);
+      #endif
+      #if ENABLED(EXTENSIBLE_UI)
+        ExtUI::onUserConfirmRequired_P(PSTR("Filament Purge Running..."));
+      #endif
+      for (float purge_count = purge_length; purge_count > 0 && wait_for_user; --purge_count)
+        do_pause_e_move(1, ADVANCED_PAUSE_PURGE_FEEDRATE);
+      wait_for_user = false;
 
-    wait_for_user = true;
-    #if ENABLED(HOST_PROMPT_SUPPORT)
-      host_prompt_do(PROMPT_USER_CONTINUE, PSTR("Filament Purge Running..."), CONTINUE_STR);
-    #endif
-    #if ENABLED(EXTENSIBLE_UI)
-      ExtUI::onUserConfirmRequired_P(PSTR("Filament Purge Running..."));
-    #endif
-    for (float purge_count = purge_length; purge_count > 0 && wait_for_user; --purge_count)
-      do_pause_e_move(1, ADVANCED_PAUSE_PURGE_FEEDRATE);
-    wait_for_user = false;
+    #else
 
-  #else
+      do {
+        if (purge_length > 0) {
+          // "Wait for filament purge"
+          #if HAS_LCD_MENU
+            if (show_lcd) lcd_pause_show_message(PAUSE_MESSAGE_PURGE);
+          #endif
 
-    do {
-      if (purge_length > 0) {
-        // "Wait for filament purge"
-        #if HAS_LCD_MENU
-          if (show_lcd) lcd_pause_show_message(PAUSE_MESSAGE_PURGE);
+          // Extrude filament to get into hotend
+          do_pause_e_move(purge_length, ADVANCED_PAUSE_PURGE_FEEDRATE);
+        }
+
+        // Show "Purge More" / "Resume" menu and wait for reply
+        #if ENABLED(HOST_PROMPT_SUPPORT)
+          host_prompt_reason = PROMPT_FILAMENT_RUNOUT;
+          host_action_prompt_end();   // Close current prompt
+          host_action_prompt_begin(PSTR("Paused"));
+          host_action_prompt_button(PSTR("PurgeMore"));
+          if (false
+            #if HAS_FILAMENT_SENSOR
+              || runout.filament_ran_out
+            #endif
+          )
+            host_action_prompt_button(PSTR("DisableRunout"));
+          else {
+            host_prompt_reason = PROMPT_FILAMENT_RUNOUT;
+            host_action_prompt_button(CONTINUE_STR);
+          }
+          host_action_prompt_show();
         #endif
 
-        // Extrude filament to get into hotend
-        do_pause_e_move(purge_length, ADVANCED_PAUSE_PURGE_FEEDRATE);
-      }
+        #if HAS_LCD_MENU
+          if (show_lcd) {
+            KEEPALIVE_STATE(PAUSED_FOR_USER);
+            wait_for_user = false;
+            lcd_pause_show_message(PAUSE_MESSAGE_OPTION);
+            while (pause_menu_response == PAUSE_RESPONSE_WAIT_FOR) idle(true);
+          }
+        #endif
 
-      // Show "Purge More" / "Resume" menu and wait for reply
-      #if ENABLED(HOST_PROMPT_SUPPORT)
-        host_prompt_reason = PROMPT_FILAMENT_RUNOUT;
-        host_action_prompt_end();   // Close current prompt
-        host_action_prompt_begin(PSTR("Paused"));
-        host_action_prompt_button(PSTR("PurgeMore"));
-        if (false
-          #if HAS_FILAMENT_SENSOR
-            || runout.filament_ran_out
-          #endif
-        )
-          host_action_prompt_button(PSTR("DisableRunout"));
-        else {
-          host_prompt_reason = PROMPT_FILAMENT_RUNOUT;
-          host_action_prompt_button(CONTINUE_STR);
-        }
-        host_action_prompt_show();
-      #endif
+        // Keep looping if "Purge More" was selected
+      } while (false
+        #if HAS_LCD_MENU
+          || (show_lcd && pause_menu_response == PAUSE_RESPONSE_EXTRUDE_MORE)
+        #endif
+      );
 
-      #if HAS_LCD_MENU
-        if (show_lcd) {
-          KEEPALIVE_STATE(PAUSED_FOR_USER);
-          wait_for_user = false;
-          lcd_pause_show_message(PAUSE_MESSAGE_OPTION);
-          while (pause_menu_response == PAUSE_RESPONSE_WAIT_FOR) idle(true);
-        }
-      #endif
-
-      // Keep looping if "Purge More" was selected
-    } while (false
-      #if HAS_LCD_MENU
-        || (show_lcd && pause_menu_response == PAUSE_RESPONSE_EXTRUDE_MORE)
-      #endif
-    );
-
+    #endif
   #endif
-
   return true;
 }
 
@@ -444,13 +444,8 @@ bool pause_print(const float &retract, const xyz_pos_t &park_point, const float 
   // Wait for buffered blocks to complete
   planner.synchronize();
 
-
-
   #if ENABLED(ADVANCED_PAUSE_FANS_PAUSE) && FAN_COUNT > 0
-    if(!SECOND_PAUSE)
-    {
-      thermalManager.set_fans_paused(true);
-    }
+    thermalManager.set_fans_paused(true);
   #endif
 
   // Initial retract before move to filament change position
@@ -468,11 +463,8 @@ bool pause_print(const float &retract, const xyz_pos_t &park_point, const float 
     extruder_duplication_enabled = false;
   #endif
 
-  if(!SECOND_PAUSE)
-  {
-    if (unload_length)   // Unload the filament
-      unload_filament(unload_length, show_lcd, PAUSE_MODE_CHANGE_FILAMENT);
-  }
+  if (unload_length)   // Unload the filament
+    unload_filament(unload_length, show_lcd, PAUSE_MODE_CHANGE_FILAMENT);
 
   #if ENABLED(DUAL_X_CARRIAGE)
     active_extruder = saved_ext;
