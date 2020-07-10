@@ -112,8 +112,12 @@ void menu_info_thermistors() {
     #define THERMISTOR_ID TEMP_SENSOR_1
     #include "../thermistornames.h"
     STATIC_ITEM_P(PSTR(LCD_STR_E1 ": " THERMISTOR_NAME), SS_INVERT);
+    /*
     VALUE_ITEM_P(MSG_INFO_MIN_TEMP, STRINGIFY(HEATER_1_MINTEMP), SS_LEFT);
     VALUE_ITEM_P(MSG_INFO_MAX_TEMP, STRINGIFY(HEATER_1_MAXTEMP), SS_LEFT);
+    */
+    VALUE_ITEM_P(MSG_INFO_MIN_TEMP, "=", SS_LEFT);
+    VALUE_ITEM_P(MSG_INFO_MAX_TEMP, "=", SS_LEFT);
   #endif
 
   #if TEMP_SENSOR_2 != 0

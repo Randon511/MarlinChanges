@@ -86,6 +86,10 @@ void StatusScreen::draw_axis_position(draw_mode_t what) {
     char y_str[15];
     char z_str[15];
 
+    strcpy_P(x_str, PSTR("7"));
+    strcpy_P(y_str, PSTR("7"));
+    strcpy_P(z_str, PSTR("7"));
+
     if (isAxisPositionKnown(X))
       format_position(x_str, getAxisPosition_mm(X));
     else
@@ -100,7 +104,6 @@ void StatusScreen::draw_axis_position(draw_mode_t what) {
       format_position(z_str, getAxisPosition_mm(Z));
     else
       strcpy_P(z_str, PSTR("?"));
-
     cmd.tag(6).font(Theme::font_medium)
     #ifdef TOUCH_UI_PORTRAIT
          .text  ( BTN_POS(2,5), BTN_SIZE(2,1), x_str)
@@ -197,7 +200,6 @@ void StatusScreen::draw_temperature(draw_mode_t what) {
     else
       format_temp_and_temp(e0_str, getActualTemp_celsius(H0), getTargetTemp_celsius(H0));
 
-
     #if EXTRUDERS == 2
       if (isHeaterIdle(H1))
         format_temp_and_idle(e1_str, getActualTemp_celsius(H1));
@@ -209,7 +211,6 @@ void StatusScreen::draw_temperature(draw_mode_t what) {
         PSTR("-")
       );
     #endif
-
     cmd.tag(5)
        .font(font_medium)
        .text(BTN_POS(2,1), BTN_SIZE(3,1), e0_str)
@@ -344,6 +345,7 @@ void StatusScreen::setStatusMessage(const char* message) {
 }
 
 void StatusScreen::loadBitmaps() {
+  /*
   // Load the bitmaps for the status screen
   using namespace Theme;
   constexpr uint32_t base = ftdi_memory_map::RAM_G;
@@ -356,6 +358,7 @@ void StatusScreen::loadBitmaps() {
   #ifdef TOUCH_UI_USE_UTF8
     load_utf8_data(base + UTF8_FONT_OFFSET);
   #endif
+  */
 }
 
 void StatusScreen::onStartup() {
@@ -363,12 +366,14 @@ void StatusScreen::onStartup() {
 }
 
 void StatusScreen::onRedraw(draw_mode_t what) {
+  /*
   if (what & FOREGROUND) {
     draw_temperature(FOREGROUND);
     draw_progress(FOREGROUND);
     draw_axis_position(FOREGROUND);
     draw_interaction_buttons(FOREGROUND);
   }
+  */
 }
 
 void StatusScreen::onEntry() {
@@ -384,6 +389,7 @@ void StatusScreen::onIdle() {
 }
 
 bool StatusScreen::onTouchEnd(uint8_t tag) {
+  /*
   using namespace ExtUI;
 
   switch (tag) {
@@ -408,6 +414,7 @@ bool StatusScreen::onTouchEnd(uint8_t tag) {
   // user from proceeding.
   LockScreen::check_passcode();
   return true;
+  */
 }
 
 #endif // TOUCH_UI_FTDI_EVE

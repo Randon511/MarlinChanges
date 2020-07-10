@@ -752,7 +752,17 @@ inline void loud_kill(PGM_P const lcd_msg, const heater_ind_t heater) {
     }
     WRITE(BEEPER_PIN, HIGH);
   #endif
-  kill(lcd_msg, HEATER_PSTR(heater));
+    
+  #if ENABLED(RANDOLPH_PAUSE)
+    if(heater == 1){
+      kill(lcd_msg, PSTR("C-Fan"));
+    }
+    else{
+      kill(lcd_msg, HEATER_PSTR(heater));
+    }
+  #else
+    kill(lcd_msg, HEATER_PSTR(heater));
+  #endif
 }
 
 void Temperature::_temp_error(const heater_ind_t heater, PGM_P const serial_msg, PGM_P const lcd_msg) {
@@ -801,7 +811,13 @@ void Temperature::_temp_error(const heater_ind_t heater, PGM_P const serial_msg,
 }
 
 void Temperature::max_temp_error(const heater_ind_t heater) {
-  _temp_error(heater, PSTR(MSG_T_MAXTEMP), GET_TEXT(MSG_ERR_MAXTEMP));
+  #if ENABLED(RANDOLPH_PAUSE)
+    if(heater == 1){
+      _temp_error(heater, PSTR(MSG_T_MAXTEMP), GET_TEXT(MSG_ERR_MAXTEMP));
+    }
+  #else
+    _temp_error(heater, PSTR(MSG_T_MAXTEMP), GET_TEXT(MSG_ERR_MAXTEMP));
+  #endif
 }
 
 void Temperature::min_temp_error(const heater_ind_t heater) {

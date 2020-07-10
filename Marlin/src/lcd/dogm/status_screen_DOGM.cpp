@@ -185,7 +185,36 @@ FORCE_INLINE void _draw_centered_temp(const int16_t temp, const uint8_t tx, cons
           }
           else
         #endif
+      
+        #if ENABLED(RANDOLPH_PAUSE)
+          if(heater == 0){
             u8g.drawBitmapP(hx, STATUS_HEATERS_Y, bw, STATUS_HEATERS_HEIGHT, HOTEND_BITMAP(heater, isHeat));
+          }
+          else
+          {
+            #if STATUS_FAN_FRAMES > 2
+              static bool old_blink;
+              static uint8_t fan_frame;
+              if (old_blink != blink) {
+                old_blink = blink;
+                if (!thermalManager.fan_speed[0] || ++fan_frame >= STATUS_FAN_FRAMES) fan_frame = 0;
+              }
+            #endif
+            if (PAGE_CONTAINS(STATUS_FAN_Y, STATUS_FAN_Y + STATUS_FAN_HEIGHT - 1))
+              u8g.drawBitmapP(hx-(hx/8), STATUS_FAN_Y, STATUS_FAN_BYTEWIDTH, STATUS_FAN_HEIGHT,
+                #if STATUS_FAN_FRAMES > 2
+                  fan_frame == 1 ? status_fan1_bmp :
+                  fan_frame == 2 ? status_fan2_bmp :
+                  #if STATUS_FAN_FRAMES > 3
+                    fan_frame == 3 ? status_fan3_bmp :
+                  #endif
+                #elif STATUS_FAN_FRAMES > 1
+                  blink && thermalManager.fan_speed[0] ? status_fan1_bmp :
+                #endif
+                status_fan0_bmp
+              ); 
+          }  
+        #endif
       #endif
 
       // Draw a heating progress bar, if specified
@@ -211,7 +240,11 @@ FORCE_INLINE void _draw_centered_temp(const int16_t temp, const uint8_t tx, cons
       #else
         constexpr bool dodraw = true;
       #endif
-      if (dodraw) _draw_centered_temp(target + 0.5, tx, 7);
+      #if ENABLED(RANDOLPH_PAUSE)
+        if(heater == 0){
+          if (dodraw) _draw_centered_temp(target + 0.5, tx, 7);
+        }
+      #endif
     }
 
     if (PAGE_CONTAINS(28 - INFO_FONT_ASCENT, 28 - 1))
